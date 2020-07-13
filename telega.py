@@ -72,5 +72,7 @@ try:
     response = requests.post(TG_API_URL, json=payload, proxies=PROXIES)
 except requests.RequestException as e:
     logger.exception(f"Request to Telegram API failed: {str(e)}.")
+    exit(1)  # To Let to know zabbix that something went wrong, it should send notification again.
 else:
     logger.debug(f'Request to Telegram API - OK.')
+    exit(0)
