@@ -45,20 +45,28 @@ parser = argparse.ArgumentParser()
 parser.add_argument("telegram_id", help="Telegram account ID to send to. (Use @my_id_bot to find it.)", type=int)
 parser.add_argument("subject", help="Zabbix notification subject.")
 parser.add_argument("message", help="Zabbix notification message.", )
-
 args = parser.parse_args()
 
 emoji = ''
 status = re.search(STATUS_PAT, args.message)
 if status:
-    if status.group('status') == 'OK':
+    status_value = status.group('status').rstrip('\r')
+    logger.debug(f"Found starus={status_value}.")
+    if status_value == 'OK':
         emoji = emoji_map['OK'] + ' '
     else:
         severity = re.search(SEVERITY_PAT, args.message)
         if severity:
-            if severity.group('severity') in emoji_map.keys():
-                emoji = emoji_map[severity.group('severity')] + ' '
-
+            severity_value = severity.group('severity').rstrip('\r')
+            logger.debug(f"Found severity={severity_value}.")
+            if severity_value in emoji_map.keys():
+                emoji = emoji_map[severity_value] + ' '
+            else:
+                logger.warning(f"Unknown severity:{severity_value}.")
+        else:
+            logger.warning(f"Severity not found.")
+else:
+    logger.warning(f"Status not found.")
 payload = {"chat_id": f"{args.telegram_id}", "text": f"{emoji}{args.subject}\n\n{args.message}"}
 try:
     response = requests.post(TG_API_URL, json=payload, proxies=PROXIES)
